@@ -28,7 +28,7 @@ public class TokenManager {
     }
 
     private final Token.TokenTypes[] comparisonTokens = {Token.TokenTypes.LESSTHAN, Token.TokenTypes.LESSTHANEQUAL,
-            Token.TokenTypes.GREATERTHANEQUAL, Token.TokenTypes.GREATERTHAN, Token.TokenTypes.NOTEQUAL};
+            Token.TokenTypes.GREATERTHANEQUAL, Token.TokenTypes.GREATERTHAN, Token.TokenTypes.NOTEQUAL, Token.TokenTypes.EQUAL};
 
     private final Token.TokenTypes[] passerTokens = {Token.TokenTypes.NUMBER, Token.TokenTypes.STRINGLITERAL,
             Token.TokenTypes.FINDONE, Token.TokenTypes.IDENTIFIER};
