@@ -1,6 +1,7 @@
 import AST.*;
 import org.w3c.dom.css.CSSValueList;
 
+import javax.swing.text.html.Option;
 import java.util.List;
 import java.util.Optional;
 
@@ -8,6 +9,8 @@ import java.util.Optional;
 public class SharQLParser {
     private List<Token> tokenList;
     private final TokenManager manager;
+
+
     private void handleError(String errorString) throws SyntaxErrorException {
         throw new SyntaxErrorException(errorString, manager.getCurrentLine(), manager.getCurrentColumnNumber());
     }
@@ -91,49 +94,174 @@ public class SharQLParser {
 
     // value = NUMBER | STRINGLITERAL | IDENTIFIER | findOne | valueList
     Optional<value> value() throws SyntaxErrorException{
-        //Optional<valueList> newValueList = valueList();
-        // if (manager.checkPassers().isEmpty()) || {
-           // handleError("Variable passed invalid input at: ");
-       // }
+
+        Optional<valueList> newValueList = listOfValues();
+        Optional<Token> passedValue = manager.checkPassers();
+
+        if (passedValue.isEmpty() && newValueList.isEmpty()){
+           handleError("Variable passed invalid input at: ");
+       }
+        var value = new value();
+
+        if (newValueList.isPresent()){
+            value.valueList = newValueList;
+            return Optional.of(value);
+        }
+        var type = passedValue.get().Type;
+
+
+        if (type == Token.TokenTypes.STRINGLITERAL){
+            value.STRINGLITERAL = passedValue.get().Value;
+            return Optional.of(value);
+        }
+        if (type == Token.TokenTypes.NUMBER){
+            value.NUMBER = passedValue.get().Value;
+            return Optional.of(value);
+        }
+
+        if (type == Token.TokenTypes.FINDONE){
+            value.findOne = findOne();
+            return Optional.of(value);
+        }
+
+        
         return Optional.empty();
     }
 
     // values = value ("," value)*
+    Optional<values> values() throws SyntaxErrorException {
 
-    Optional<values> values(){
+        Optional<value> value = value();
+        if (value.isEmpty()){
+            return Optional.empty();
+        }
+        var values = new values();
+
+        while (manager.matchAndRemove(Token.TokenTypes.COMMA).isPresent()){
+            var newValue = value();
+            if (newValue.isEmpty()){
+                handleError("Expected value at: ");
+            }
+            values.value.add(newValue.get());
+        }
         return Optional.empty();
     }
 
     // valueList = "[" findOne? ("," findOne)* "]"
+    Optional<valueList> listOfValues() throws SyntaxErrorException {
 
-    Optional<valueList> listOfValues() throws SyntaxErrorException{
-
-        if (manager.matchAndRemove(Token.TokenTypes.LEFTBRACE).isEmpty()){
-            handleError("Value List needs opening bracket: ");
-        }
-        if (manager.matchAndRemove(Token.TokenTypes.FINDONE).isEmpty()){
-            var valueList = new valueList();
-            return Optional.of(valueList);
+        if (manager.matchAndRemove(Token.TokenTypes.LEFTBRACE).isEmpty()) {
+            return Optional.empty();
         }
 
-        var newFindOne = new findOne();
         valueList listOfValues = new valueList();
-        listOfValues.findOne.add(newFindOne);
+
+        Optional<findOne> newFindOne = findOne();
+
+        newFindOne.ifPresent(findOne -> listOfValues.findOne.add(findOne));
 
         while (manager.matchAndRemove(Token.TokenTypes.COMMA).isPresent()) {
+
             Optional<findOne> nextFindOne = findOne();
+
             if (nextFindOne.isEmpty()) {
-                handleError("Expecting comparison at: ");
+                handleError("Expected findOne after comma: ");
             }
+
             listOfValues.findOne.add(nextFindOne.get());
         }
-        listOfValues.findOne.add(newFindOne);
+
+        if (manager.matchAndRemove(Token.TokenTypes.RIGHTBRACE).isEmpty()) {
+            handleError("Value List needs closing bracket: ");
+        }
+
         return Optional.of(listOfValues);
     }
 
     // insert = "insert" IDENTIFIER NEWLINE INDENT (values NEWLINE)+ NEWLINE* DEDENT
-    Optional<insert> insert(){
-        return Optional.empty();
+    Optional<insert> insert() throws SyntaxErrorException {
+
+        if (manager.matchAndRemove(Token.TokenTypes.INSERT).isEmpty()){
+            return Optional.empty();
+        }
+
+        var identifier = manager.matchAndRemove(Token.TokenTypes.IDENTIFIER);
+        if (identifier.isEmpty()){
+            handleError("Insert statement requires identifier at: ");
+        }
+
+        insert newInsert = new insert(identifier.toString());
+
+        if (manager.matchAndRemove(Token.TokenTypes.NEWLINE).isEmpty()){
+            handleError("Expected newline at: ");
+        }
+        if(manager.matchAndRemove(Token.TokenTypes.INDENT).isEmpty()){
+            handleError("Expected indent at: ");
+        }
+        var value = values();
+        if (value.isEmpty()){
+            handleError("Expected value at: ");
+        }
+        while (value.isPresent()){
+            newInsert.values.add(value.get());
+            if(manager.matchAndRemove(Token.TokenTypes.NEWLINE).isEmpty()){
+                handleError("Expected newline at: ");
+            }
+            value = values();
+        }
+        if (manager.matchAndRemove(Token.TokenTypes.NEWLINE).isPresent()){
+            while (manager.matchAndRemove(Token.TokenTypes.NEWLINE).isPresent()){
+                int whatever = 0;
+            }
+            if (manager.matchAndRemove(Token.TokenTypes.DEDENT).isEmpty()){
+                handleError("Expected dedent at: ");
+            }
+        }
+
+        if (manager.matchAndRemove(Token.TokenTypes.DEDENT).isEmpty()){
+            handleError("Expected dedent at: ");
+        }
+        return Optional.of(newInsert);
     }
     // delete = "delete" IDENTIFIER NEWLINE INDENT ((values | findOne) NEWLINE)+ NEWLINE* DEDENT
+    Optional<delete> delete() throws SyntaxErrorException{
+        if (manager.matchAndRemove(Token.TokenTypes.DELETE).isEmpty()){
+            return Optional.empty();
+        }
+        var delete = new delete();
+        var identifier = manager.matchAndRemove(Token.TokenTypes.IDENTIFIER);
+
+        if (identifier.isEmpty()){
+            handleError("Expected identifier at: ");
+        }
+
+        if (manager.matchAndRemove(Token.TokenTypes.NEWLINE).isEmpty()){
+            handleError("Expected newline at: ");
+        }
+
+        if (manager.matchAndRemove(Token.TokenTypes.INDENT).isEmpty()){
+            handleError("Expected Indent at: ");
+        }
+
+        var values = values();
+        var newFindOne = findOne();
+
+        if (newFindOne.isEmpty() || values.isEmpty()){
+            handleError("Expected value or find one at: ");
+        }
+        while (values.isPresent() || newFindOne.isPresent()){
+            if (values.isPresent()){
+                delete.values.add(values.get());
+                values = values();
+            }
+            if (newFindOne.isPresent()){
+                delete.findOne.add(newFindOne.get());
+                newFindOne = findOne();
+            }
+            if (manager.matchAndRemove(Token.TokenTypes.NEWLINE).isEmpty()){
+                handleError("Expected newline at: ");
+            }
+        }
+        return Optional.empty();
+    }
 }
