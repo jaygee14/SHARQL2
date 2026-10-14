@@ -1,10 +1,6 @@
-import SharQL.*;
-import java.util.LinkedList;
-	import java.util.*;
-	import SharQL.*;
-	import SharQL.AST.*;
-   import org.junit.jupiter.api.Assertions;
-   import org.junit.jupiter.api.Test;
+import AST.*;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class Parser2Test2ParserTest {
     @Test
@@ -60,7 +56,8 @@ public class Parser2Test2ParserTest {
 "";
         var tokens = new Lexer(code).Lex();
         var p=new SharQLParser(tokens);
-        var top=p.sharQL().orElseThrow();
+        var top=p.sharQL();
+
 Assertions.assertEquals("restaurant",top.statement.get(0).insert.orElseThrow().name);
 Assertions.assertFalse(top.statement.get(0).insert.orElseThrow().values.get(0).value.get(0).NUMBER.isPresent());
 Assertions.assertEquals("Sarah’s Pizzeria",top.statement.get(0).insert.orElseThrow().values.get(0).value.get(0).STRINGLITERAL.orElseThrow());

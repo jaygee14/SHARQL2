@@ -1,10 +1,6 @@
-import SharQL.*;
-import java.util.LinkedList;
-	import java.util.*;
-	import SharQL.*;
-	import SharQL.AST.*;
-   import org.junit.jupiter.api.Assertions;
-   import org.junit.jupiter.api.Test;
+import AST.*;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class Parser2Test1ParserTest {
     @Test
@@ -63,8 +59,10 @@ public class Parser2Test1ParserTest {
          "    \"Potato Fry\", 7654321, junior, [findOne(name=\"Computer Science\")], findOne(lockerNumber=205), 55, findOne(name=\"Kathryn Fore\"), findOne(hallName=\"Schuyler Hall\")\n"+
 "";
         var tokens = new Lexer(code).Lex();
+
         var p=new SharQLParser(tokens);
-        var top=p.sharQL().orElseThrow();
+        var top=p.sharQL();
+
 Assertions.assertEquals("university",top.statement.get(0).insert.orElseThrow().name);
 Assertions.assertFalse(top.statement.get(0).insert.orElseThrow().values.get(0).value.get(0).NUMBER.isPresent());
 Assertions.assertEquals("SUNY Albany",top.statement.get(0).insert.orElseThrow().values.get(0).value.get(0).STRINGLITERAL.orElseThrow());

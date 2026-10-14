@@ -1,16 +1,12 @@
-import SharQL.*;
-import java.util.LinkedList;
-	import java.util.*;
-	import SharQL.*;
-	import SharQL.AST.*;
-   import org.junit.jupiter.api.Assertions;
-   import org.junit.jupiter.api.Test;
+import AST.*;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class Parser2Test3ParserTest {
     @Test
     public void TestParser2Test3Parser() throws Exception {
         var code =          "insert patient\n"+
-         "	001, \"Urahara Kisuke\", \"(518) 699-9999\", \"hbuthShopkeeper@gmail.com\", \"7/23/1200\"\n"+
+         "  001, \"Urahara Kisuke\", \"(518) 699-9999\", \"hbuthShopkeeper@gmail.com\", \"7/23/1200\"\n"+
          "	002, \"Aizen Sosuke\", \"(518) 123-4444\", \"theRealHogyoku@gmail.com\", \"1/1/1000\"\n"+
          "\n"+
          "insert medicine\n"+
@@ -48,7 +44,7 @@ public class Parser2Test3ParserTest {
 "";
         var tokens = new Lexer(code).Lex();
         var p=new SharQLParser(tokens);
-        var top=p.sharQL().orElseThrow();
+        var top=p.sharQL();
 Assertions.assertEquals("patient",top.statement.get(0).insert.orElseThrow().name);
 Assertions.assertEquals("001",top.statement.get(0).insert.orElseThrow().values.get(0).value.get(0).NUMBER.orElseThrow());
 Assertions.assertFalse(top.statement.get(0).insert.orElseThrow().values.get(0).value.get(0).STRINGLITERAL.isPresent());

@@ -135,21 +135,24 @@ public class Lexer {
             }
 
             else if (c == ' '){
+                boolean startOfLine = characterPosition == 1;
                 int spaceCount = 0;
+
                 while (!textManager.isEnd() && textManager.peekCharacter() == ' '){
                     textManager.getCharacter();
-                    spaceCount+=1;
+                    spaceCount++;
                     characterPosition++;
                 }
-                if (spaceCount % 4 != 0 && spaceCount > 1){
-                    throw new SyntaxErrorException("Invalid Format", lineNumber, characterPosition);
-                }
-
-                else if (spaceCount > 1 && spaceCount > indentLevel){
-                    indent();
-                }
-                else if (spaceCount == 0 && spaceCount < indentLevel){
-                    dedent();
+                if (startOfLine){
+                    if (spaceCount % 4 != 0){
+                        throw new SyntaxErrorException("Invalid Format", lineNumber, characterPosition);
+                    }
+                    while (indentLevel < spaceCount){
+                        indent();
+                    }
+                    while (indentLevel > spaceCount){
+                        dedent();
+                    }
                 }
             }
 
@@ -235,9 +238,13 @@ public class Lexer {
             }
         }
 
-        for (int i = 0; i < listOfTokens.size(); i++){
-            System.out.println(i + ": " + listOfTokens.get(i).Type + " " + listOfTokens.get(i).Value);
+//        for (int i = 0; i < listOfTokens.size(); i++){
+//            System.out.println(i + ": " + listOfTokens.get(i).Type + " " + listOfTokens.get(i).Value);
+//        }
+        while (indentLevel > 0){
+            dedent();
         }
+
         return listOfTokens;
     }
 }

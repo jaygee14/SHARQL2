@@ -1,7 +1,4 @@
 import AST.*;
-import org.w3c.dom.css.CSSValueList;
-
-import javax.swing.text.html.Option;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,6 +18,19 @@ public class SharQLParser {
 
     public findOne parser1Test() throws SyntaxErrorException {
         return findOne().orElseThrow();
+    }
+    public sharQL sharQL() throws SyntaxErrorException {
+
+        sharQL top = new sharQL();
+
+        var newStatement = statement();
+
+        while (newStatement.isPresent()){
+            top.statement.add(newStatement.get());
+            newStatement = statement();
+        }
+
+        return top;
     }
 
     //findOne = "findOne" "(" compare ( "," compare) * ")"
@@ -53,6 +63,21 @@ public class SharQLParser {
             handleError("Must close findOne call: ");
         }
         return Optional.of(newFindOne);
+    }
+    // statement = create | insert | delete | from
+    Optional<statement> statement() throws SyntaxErrorException {
+        Optional<Token> passedValue = manager.checkStatement();
+        if (passedValue.isEmpty()){
+            return Optional.empty();
+        }
+        var statement = new statement();
+        if (passedValue.get().Type == Token.TokenTypes.INSERT){
+            statement.insert = insert();
+        }
+        if (passedValue.get().Type == Token.TokenTypes.DELETE){
+            statement.delete = delete();
+        }
+        return Optional.of(statement);
     }
 
     // compare = IDENTIFIER ( "=" | "<" | ">" | "<>" | "<=" | ">=") (NUMBER | STRINGLITERAL | IDENTIFIER | findOne)
@@ -93,41 +118,43 @@ public class SharQLParser {
     }
 
     // value = NUMBER | STRINGLITERAL | IDENTIFIER | findOne | valueList
-    Optional<value> value() throws SyntaxErrorException{
+    Optional<value> value() throws SyntaxErrorException {
 
-        Optional<valueList> newValueList = listOfValues();
-        Optional<Token> passedValue = manager.checkPassers();
+        Optional<Token> passedValue = manager.peek(0);
 
-        if (passedValue.isEmpty() && newValueList.isEmpty()){
-           handleError("Variable passed invalid input at: ");
-       }
-        var value = new value();
-
-        if (newValueList.isPresent()){
-            value.valueList = newValueList;
-            return Optional.of(value);
+        if (passedValue.isEmpty()){
+            return Optional.empty();
         }
+        var newValue = new value();
         var type = passedValue.get().Type;
 
-
         if (type == Token.TokenTypes.STRINGLITERAL){
-            value.STRINGLITERAL = passedValue.get().Value;
-            return Optional.of(value);
+            manager.matchAndRemove(Token.TokenTypes.STRINGLITERAL);
+            newValue.STRINGLITERAL = passedValue.get().Value;
+            return Optional.of(newValue);
         }
         if (type == Token.TokenTypes.NUMBER){
-            value.NUMBER = passedValue.get().Value;
-            return Optional.of(value);
+            manager.matchAndRemove(Token.TokenTypes.NUMBER);
+            newValue.NUMBER = passedValue.get().Value;
+            return Optional.of(newValue);
         }
-
+        if (type == Token.TokenTypes.IDENTIFIER){
+            manager.matchAndRemove(Token.TokenTypes.IDENTIFIER);
+            newValue.name = passedValue.get().Value;
+            return Optional.of(newValue);
+        }
         if (type == Token.TokenTypes.FINDONE){
-            value.findOne = findOne();
-            return Optional.of(value);
+            newValue.findOne = findOne();
+            return Optional.of(newValue);
         }
-
-        
+        if (type == Token.TokenTypes.LEFTBRACE){
+            newValue.valueList = listOfValues();
+            return Optional.of(newValue);
+        }
         return Optional.empty();
     }
 
+    // values = value ("," value)*
     // values = value ("," value)*
     Optional<values> values() throws SyntaxErrorException {
 
@@ -136,15 +163,17 @@ public class SharQLParser {
             return Optional.empty();
         }
         var values = new values();
+        values.value.add(value.get());
 
         while (manager.matchAndRemove(Token.TokenTypes.COMMA).isPresent()){
             var newValue = value();
+
             if (newValue.isEmpty()){
                 handleError("Expected value at: ");
             }
             values.value.add(newValue.get());
         }
-        return Optional.empty();
+        return Optional.of(values);
     }
 
     // valueList = "[" findOne? ("," findOne)* "]"
@@ -190,7 +219,7 @@ public class SharQLParser {
             handleError("Insert statement requires identifier at: ");
         }
 
-        insert newInsert = new insert(identifier.toString());
+        insert newInsert = new insert(identifier.get().Value.orElseThrow());
 
         if (manager.matchAndRemove(Token.TokenTypes.NEWLINE).isEmpty()){
             handleError("Expected newline at: ");
@@ -209,18 +238,13 @@ public class SharQLParser {
             }
             value = values();
         }
-        if (manager.matchAndRemove(Token.TokenTypes.NEWLINE).isPresent()){
-            while (manager.matchAndRemove(Token.TokenTypes.NEWLINE).isPresent()){
-                int whatever = 0;
-            }
-            if (manager.matchAndRemove(Token.TokenTypes.DEDENT).isEmpty()){
-                handleError("Expected dedent at: ");
-            }
+        while (manager.matchAndRemove(Token.TokenTypes.NEWLINE).isPresent()){
+            int whatever = 0;
         }
-
         if (manager.matchAndRemove(Token.TokenTypes.DEDENT).isEmpty()){
             handleError("Expected dedent at: ");
         }
+
         return Optional.of(newInsert);
     }
     // delete = "delete" IDENTIFIER NEWLINE INDENT ((values | findOne) NEWLINE)+ NEWLINE* DEDENT
@@ -243,21 +267,16 @@ public class SharQLParser {
             handleError("Expected Indent at: ");
         }
 
-        var values = values();
+        //var values = values();
         var newFindOne = findOne();
 
-        if (newFindOne.isEmpty() || values.isEmpty()){
+        if (newFindOne.isEmpty()){
             handleError("Expected value or find one at: ");
         }
-        while (values.isPresent() || newFindOne.isPresent()){
-            if (values.isPresent()){
-                delete.values.add(values.get());
-                values = values();
-            }
-            if (newFindOne.isPresent()){
-                delete.findOne.add(newFindOne.get());
-                newFindOne = findOne();
-            }
+        while (newFindOne.isPresent()){
+
+            delete.findOne.add(newFindOne.get());
+            newFindOne = findOne();
             if (manager.matchAndRemove(Token.TokenTypes.NEWLINE).isEmpty()){
                 handleError("Expected newline at: ");
             }
