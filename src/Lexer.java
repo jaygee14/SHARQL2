@@ -1,6 +1,7 @@
 import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Stack;
 
 public class Lexer {
 
@@ -10,10 +11,12 @@ public class Lexer {
     public int characterPosition = 1;
     List<Token> listOfTokens;
     int indentLevel = 0;
+    private final Stack<Integer> indentLevels = new Stack<>();
 
     public Lexer(String word)  {
         this.textManager = new TextManager(word);
         keyWords = new HashMap<>();
+        indentLevels.push(0);
 
         keyWords.put("identifier", Token.TokenTypes.IDENTIFIER);
         keyWords.put("number", Token.TokenTypes.NUMBER);
@@ -64,13 +67,31 @@ public class Lexer {
         lineNumber = 0;
     }
 
-    private void indent(){
-        indentLevel += 4;
-        listOfTokens.add(new Token (Token.TokenTypes.INDENT, lineNumber, characterPosition));
-    }
-    private void dedent(){
-        indentLevel -= 4;
-        listOfTokens.add(new Token (Token.TokenTypes.DEDENT, lineNumber, characterPosition));
+    private void updateIndentation(int spaces) throws SyntaxErrorException {
+
+        if (spaces % 2 != 0) {
+            throw new SyntaxErrorException(
+                    "Invalid indentation", lineNumber, characterPosition);
+        }
+
+        if (spaces > indentLevels.peek()) {
+            indentLevels.push(spaces);
+            listOfTokens.add(new Token(Token.TokenTypes.INDENT,
+                    lineNumber, characterPosition));
+        }
+
+        else if (spaces < indentLevels.peek()) {
+            while (indentLevels.size() > 1 && spaces < indentLevels.peek()) {
+                indentLevels.pop();
+                listOfTokens.add(new Token(Token.TokenTypes.DEDENT,
+                        lineNumber, characterPosition));
+            }
+
+            if (spaces != indentLevels.peek()) {
+                throw new SyntaxErrorException(
+                        "Invalid dedentation", lineNumber, characterPosition);
+            }
+        }
     }
 
 
@@ -79,8 +100,15 @@ public class Lexer {
         while (!textManager.isEnd()) {
             char c = textManager.peekCharacter();
 
-            if (Character.isLetter(c) && characterPosition - 1 < indentLevel) {
-                dedent();
+            if (characterPosition == 1 &&
+                    c != ' ' &&
+                    c != '\n' &&
+                    c != '\t') {
+                updateIndentation(0);
+            }
+
+
+            if (Character.isLetter(c)) {
                 String word = textManager.readWord();
 
                 if (keyWords.containsKey(word)){
@@ -95,28 +123,13 @@ public class Lexer {
                 }
             }
 
-            else if (Character.isLetter(c)) {
-                String word = textManager.readWord();
-
-                if (keyWords.containsKey(word)){
-                    listOfTokens.add( new Token(keyWords.get(word), lineNumber, characterPosition, word));
-                    increaseCharacterPosition(word.length());
-                    //textManager.getCharacter();
-                }
-                else{
-                    listOfTokens.add(new Token (Token.TokenTypes.IDENTIFIER, lineNumber, characterPosition, word));
-                    increaseCharacterPosition(word.length());
-                    //textManager.getCharacter();
-                }
-            }
-
             else if (Character.isDigit(c)) {
                 String number = textManager.readNumber();
                 listOfTokens.add(new Token(Token.TokenTypes.NUMBER, lineNumber, characterPosition, number));
                 increaseCharacterPosition(number.length());
             }
             else if (c == '\t'){
-                listOfTokens.add(new Token(Token.TokenTypes.INDENT, lineNumber, characterPosition));
+                updateIndentation(4);
                 increaseCharacterPosition(4);
                 textManager.getCharacter();
 
@@ -132,6 +145,7 @@ public class Lexer {
             else if (c == '='){
                 listOfTokens.add(new Token(Token.TokenTypes.EQUAL, lineNumber, characterPosition));
                 textManager.getCharacter();
+                characterPosition++;
             }
 
             else if (c == ' '){
@@ -144,16 +158,9 @@ public class Lexer {
                     characterPosition++;
                 }
                 if (startOfLine){
-                    if (spaceCount % 4 != 0){
-                        throw new SyntaxErrorException("Invalid Format", lineNumber, characterPosition);
-                    }
-                    while (indentLevel < spaceCount){
-                        indent();
-                    }
-                    while (indentLevel > spaceCount){
-                        dedent();
-                    }
+                    updateIndentation(spaceCount);
                 }
+
             }
 
             else if (c == '/'){
@@ -241,8 +248,18 @@ public class Lexer {
 //        for (int i = 0; i < listOfTokens.size(); i++){
 //            System.out.println(i + ": " + listOfTokens.get(i).Type + " " + listOfTokens.get(i).Value);
 //        }
-        while (indentLevel > 0){
-            dedent();
+        if (!listOfTokens.isEmpty() &&
+                listOfTokens.getLast().Type != Token.TokenTypes.NEWLINE &&
+                listOfTokens.getLast().Type != Token.TokenTypes.DEDENT) {
+
+            listOfTokens.add(new Token(Token.TokenTypes.NEWLINE,
+                    lineNumber, characterPosition));
+        }
+
+        while (indentLevels.size() > 1) {
+            indentLevels.pop();
+            listOfTokens.add(new Token(Token.TokenTypes.DEDENT,
+                    lineNumber, characterPosition));
         }
 
         return listOfTokens;
