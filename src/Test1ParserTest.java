@@ -1,10 +1,6 @@
-import SharQL.*;
-import java.util.LinkedList;
-	import java.util.*;
-	import SharQL.*;
-	import SharQL.AST.*;
-   import org.junit.jupiter.api.Assertions;
-   import org.junit.jupiter.api.Test;
+import AST.*;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class Test1ParserTest {
     @Test
@@ -144,7 +140,7 @@ public class Test1ParserTest {
 "";
         var tokens = new Lexer(code).Lex();
         var p=new SharQLParser(tokens);
-        var top=p.sharQL().orElseThrow();
+        var top=p.sharQL();
 Assertions.assertEquals("university",top.statement.get(0).create.orElseThrow().name);
 Assertions.assertEquals(false,top.statement.get(0).create.orElseThrow().field.get(0).type.enum_);
 Assertions.assertEquals(false,top.statement.get(0).create.orElseThrow().field.get(0).type.list);

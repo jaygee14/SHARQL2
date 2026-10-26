@@ -45,7 +45,7 @@ public class TokenManager {
 
     private final Token.TokenTypes[] statementTokens = {Token.TokenTypes.CREATE, Token.TokenTypes.INSERT, Token.TokenTypes.DELETE, Token.TokenTypes.FROM};
 
-    private final Token.TokenTypes[] typeTokens = {Token.TokenTypes.STRING, Token.TokenTypes.WHOLENUMBER, Token.TokenTypes.DECIMALNUMBER};
+    private final Token.TokenTypes[] typeTokens = {Token.TokenTypes.STRING, Token.TokenTypes.WHOLENUMBER, Token.TokenTypes.DECIMALNUMBER, Token.TokenTypes.LIST, Token.TokenTypes.IDENTIFIER};
 
     Optional<Token> matchAndRemove(Token.TokenTypes token) {
 

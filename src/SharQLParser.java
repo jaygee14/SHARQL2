@@ -71,6 +71,7 @@ public class SharQLParser {
     // statement = create | insert | delete | from
     Optional<statement> statement() throws SyntaxErrorException {
         Optional<Token> passedValue = manager.checkStatement();
+
         if (passedValue.isEmpty()){
             return Optional.empty();
         }
@@ -81,31 +82,47 @@ public class SharQLParser {
         if (passedValue.get().Type == Token.TokenTypes.DELETE){
             statement.delete = delete();
         }
+        if (passedValue.get().Type == Token.TokenTypes.CREATE){
+            statement.create = create();
+        }
+        if (passedValue.get().Type == Token.TokenTypes.FROM){
+            statement.from = from();
+        }
         return Optional.of(statement);
     }
 
-    // compare = IDENTIFIER ( "=" | "<" | ">" | "<>" | "<=" | ">=") (NUMBER | STRINGLITERAL | IDENTIFIER | findOne)
     Optional<compare> compare() throws SyntaxErrorException {
+
         var leftToken = manager.matchAndRemove(Token.TokenTypes.IDENTIFIER);
 
         if (leftToken.isEmpty()) {
             return Optional.empty();
         }
+
         var operatorToken = manager.checkComparaters();
-        if (operatorToken.isEmpty()){
-            handleError("Compare statement needs compare operation at: ");
-        }
-        var passedValue = manager.checkPassers();
 
-        if (passedValue.isEmpty()){
-            handleError("Compare statement received incompatible data type at: ");
+        if (operatorToken.isEmpty()) {
+            handleError("Expected comparison operator at: ");
         }
 
-        compare newCompare = new compare();
-
+        var newCompare = new compare();
         newCompare.left = leftToken.get().Value.orElseThrow();
+
         if (operatorToken.get().Type == Token.TokenTypes.EQUAL) {
             newCompare.thecompareOp = compareOp.equal;
+        }
+
+        if (manager.peek(0).isPresent()
+                && manager.peek(0).get().Type == Token.TokenTypes.FINDONE) {
+
+            newCompare.findOne = findOne();
+            return Optional.of(newCompare);
+        }
+
+        var passedValue = manager.checkPassers();
+
+        if (passedValue.isEmpty()) {
+            handleError("Expected comparison value at: ");
         }
 
         if (passedValue.get().Type == Token.TokenTypes.NUMBER) {
@@ -120,7 +137,6 @@ public class SharQLParser {
 
         return Optional.of(newCompare);
     }
-
     // value = NUMBER | STRINGLITERAL | IDENTIFIER | findOne | valueList
     Optional<value> value() throws SyntaxErrorException {
 
@@ -318,7 +334,7 @@ public class SharQLParser {
             return Optional.empty();
         }
         var newReturnName = new returnName();
-        newReturnName.field.add(identifier.get().Value.get());
+        newReturnName.name = identifier.get().Value.get();
 
         while(manager.matchAndRemove(Token.TokenTypes.DOT).isPresent()){
             var anotherIdentifier = manager.matchAndRemove(Token.TokenTypes.IDENTIFIER);
@@ -371,18 +387,12 @@ public class SharQLParser {
         }
 
         var where = where();
+
         if (where.isPresent()){
             from.where = where;
-            if (manager.matchAndRemove(Token.TokenTypes.WHERE).isPresent()){
-                handleError("Only one where statement accepted: ");
-            }
         }
 
-        if (manager.matchAndRemove(Token.TokenTypes.NEWLINE).isPresent()){ // check for newline
-            if (manager.matchAndRemove(Token.TokenTypes.NEWLINE).isPresent()){
-                handleError("Only one newline accepted at: "); // check for 2nd newline
-            }
-        }
+        manager.matchAndRemove(Token.TokenTypes.NEWLINE);
 
         var return_ = return_();
 
@@ -403,78 +413,84 @@ public class SharQLParser {
     }
 
     // type = "enum" "(" IDENTIFIER ("," IDENTIFIER)* ")" | "string" | "wholeNumber" | "decimalNumber" | "list" "<" IDENTIFIER ">" | IDENTIFIER
-    Optional<type> type() throws SyntaxErrorException{
-        if (manager.matchAndRemove(Token.TokenTypes.ENUM).isEmpty()){
-            return Optional.empty();
-        }
+    Optional<type> type() throws SyntaxErrorException {
 
-        if (manager.matchAndRemove(Token.TokenTypes.OPENPAREN).isEmpty()){
-            handleError("Expected open parenthesis at: ");
-        }
+        type newType = new type();
 
-        var type = new type();
+        if (manager.matchAndRemove(Token.TokenTypes.ENUM).isPresent()) {
+            newType.enum_ = true;
 
-        var identifier = manager.matchAndRemove(Token.TokenTypes.IDENTIFIER);
-        if (identifier.isEmpty()){
-            handleError("Expected identifier at: ");
-        }
+            if (manager.matchAndRemove(Token.TokenTypes.OPENPAREN).isEmpty()){
+                handleError("Expected open parenthesis at: ");
+            }
+            var identifier = manager.matchAndRemove(Token.TokenTypes.IDENTIFIER);
 
-        while(manager.matchAndRemove(Token.TokenTypes.COMMA).isPresent()){
-            var newIdentifier = manager.matchAndRemove(Token.TokenTypes.IDENTIFIER);
-            if (newIdentifier.isEmpty()){
+            if (identifier.isEmpty()){
                 handleError("Expected identifier at: ");
             }
-            type.tableName.add(newIdentifier.get().Value.get());
+            newType.enumValue.add(identifier.get().Value.orElseThrow());
+
+            while (manager.matchAndRemove(Token.TokenTypes.COMMA).isPresent()) {
+                var nextIdentifier = manager.matchAndRemove(Token.TokenTypes.IDENTIFIER);
+                if (nextIdentifier.isEmpty()){
+                    handleError("Expected identifier at: ");
+                }
+
+                newType.enumValue.add(nextIdentifier.get().Value.orElseThrow());
+            }
+            if (manager.matchAndRemove(Token.TokenTypes.CLOSEPAREN).isEmpty()){
+                handleError("Expected closing parenthesis at: ");
+            }
+            return Optional.of(newType);
         }
+        if (manager.matchAndRemove(Token.TokenTypes.STRING).isPresent()) {
+            newType.thestring_ORwholeNumberORdecimalNumber =
+                    Optional.of(string_ORwholeNumberORdecimalNumber.string_);
 
-        var variable = manager.checkType();
-
-        if (variable.isEmpty()){
-            handleError("Invalid syntax for type at: ");
+            return Optional.of(newType);
         }
-        if (variable.get().Type == Token.TokenTypes.STRING){
+        if (manager.matchAndRemove(Token.TokenTypes.WHOLENUMBER).isPresent()) {
+            newType.thestring_ORwholeNumberORdecimalNumber =
+                    Optional.of(string_ORwholeNumberORdecimalNumber.wholeNumber);
 
+            return Optional.of(newType);
         }
+        if (manager.matchAndRemove(Token.TokenTypes.DECIMALNUMBER).isPresent()) {
+            newType.thestring_ORwholeNumberORdecimalNumber =
+                    Optional.of(string_ORwholeNumberORdecimalNumber.decimalNumber);
 
-        if (variable.get().Type == Token.TokenTypes.WHOLENUMBER){
-
+            return Optional.of(newType);
         }
+        if (manager.matchAndRemove(Token.TokenTypes.LIST).isPresent()) {
 
-        if (variable.get().Type == Token.TokenTypes.DECIMALNUMBER){
+            newType.list = true;
 
-        }
-
-        if (variable.get().Type == Token.TokenTypes.LIST){
             if (manager.matchAndRemove(Token.TokenTypes.LESSTHAN).isEmpty()){
-                handleError("Expected greater than symbol at: ");
+                handleError("Expected < at: ");
             }
-
-            var newIdentifier = manager.matchAndRemove(Token.TokenTypes.IDENTIFIER);
-
-            if (newIdentifier.isEmpty()){
-                handleError("Expected Identifier at: ");
+            var identifier = manager.matchAndRemove(Token.TokenTypes.IDENTIFIER);
+            if (identifier.isEmpty()){
+                handleError("Expected identifier at: ");
             }
+            newType.tableName.add(identifier.get().Value.orElseThrow());
 
-            type.tableName.add(newIdentifier.get().Value.get());
-
-            type.list = true;
+            if (manager.matchAndRemove(Token.TokenTypes.GREATERTHAN).isEmpty()){
+                handleError("Expected > at: ");
+            }
+            return Optional.of(newType);
         }
 
-
-//        if (manager.matchAndRemove(Token.TokenTypes.COMMA).isPresent()){
-//            var newIdentifier = manager.matchAndRemove(Token.TokenTypes.IDENTIFIER);
-//            if (newIdentifier.isEmpty()){
-//                handleError("Expected Identifier at: ");
-//            }
-//
-//        }
-
-        return Optional.of(type);
+        var identifier = manager.matchAndRemove(Token.TokenTypes.IDENTIFIER);
+        if (identifier.isPresent()) {
+            newType.tableName.add(identifier.get().Value.orElseThrow());
+            return Optional.of(newType);
+        }
+        return Optional.empty();
     }
-
     // field = type IDENTIFIER
     Optional<field> field() throws SyntaxErrorException{
         var newType = type();
+
         if (newType.isEmpty()){
             return Optional.empty();
         }
@@ -491,7 +507,7 @@ public class SharQLParser {
         return Optional.of(newField);
     }
 
-    // create = "create" "table" IDENTIFIER NEWLINE INDENT (field NEWLINE) + NEWLINE* DEDENT
+    // create = "create" "table" IDENTIFIER NEWLINE INDENT (field NEWLINE)+ NEWLINE* DEDENT
     Optional<create> create() throws SyntaxErrorException{
         if (manager.matchAndRemove(Token.TokenTypes.CREATE).isEmpty()){
             return Optional.empty();
@@ -505,18 +521,22 @@ public class SharQLParser {
         if (identifier.isEmpty()){
             handleError("Expected Identifier at: ");
         }
+
+        create.name = identifier.get().Value.get();
         handleNewLine();
 
         if(manager.matchAndRemove(Token.TokenTypes.INDENT).isEmpty()){
-            handleError("Expected Newline at: ");
+            handleError("Expected Indent at: ");
         }
 
         var newField = field();
+
         if (newField.isEmpty()){
             handleError("Expected field at: ");
         }
 
         while (newField.isPresent()){
+            create.field.add(newField.get());
             handleNewLine();
             newField = field();
         }
