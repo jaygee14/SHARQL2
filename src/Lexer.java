@@ -125,12 +125,13 @@ public class Lexer {
 
             else if (Character.isDigit(c)) {
                 String number = textManager.readNumber();
+
                 listOfTokens.add(new Token(Token.TokenTypes.NUMBER, lineNumber, characterPosition, number));
                 increaseCharacterPosition(number.length());
             }
             else if (c == '\t'){
-                updateIndentation(4);
-                increaseCharacterPosition(4);
+                updateIndentation(2);
+                increaseCharacterPosition(2);
                 textManager.getCharacter();
 
             }
@@ -148,21 +149,20 @@ public class Lexer {
                 characterPosition++;
             }
 
-            else if (c == ' '){
+            else if (c == ' ') {
                 boolean startOfLine = characterPosition == 1;
                 int spaceCount = 0;
 
-                while (!textManager.isEnd() && textManager.peekCharacter() == ' '){
+                while (!textManager.isEnd() && textManager.peekCharacter() == ' ') {
                     textManager.getCharacter();
                     spaceCount++;
                     characterPosition++;
                 }
-                if (startOfLine){
+
+                if (startOfLine && !textManager.isEnd() && textManager.peekCharacter() != '\n') {
                     updateIndentation(spaceCount);
                 }
-
             }
-
             else if (c == '/'){
                 textManager.getCharacter();
                 characterPosition++;

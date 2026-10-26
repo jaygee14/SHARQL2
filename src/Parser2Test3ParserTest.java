@@ -7,10 +7,10 @@ public class Parser2Test3ParserTest {
     public void TestParser2Test3Parser() throws Exception {
         var code =          "insert patient\n"+
          "  001, \"Urahara Kisuke\", \"(518) 699-9999\", \"hbuthShopkeeper@gmail.com\", \"7/23/1200\"\n"+
-         "	002, \"Aizen Sosuke\", \"(518) 123-4444\", \"theRealHogyoku@gmail.com\", \"1/1/1000\"\n"+
+         "  002, \"Aizen Sosuke\", \"(518) 123-4444\", \"theRealHogyoku@gmail.com\", \"1/1/1000\"\n"+
          "\n"+
          "insert medicine\n"+
-         "	100, \"ReiatsuIVPlus\", \"Injection twice a day every 12 hours for about 20 thousand years\"\n"+
+         "  100, \"ReiatsuIVPlus\", \"Injection twice a day every 12 hours for about 20 thousand years\"\n"+
          "\n"+
          "insert prescriptions\n"+
          "	findOne(medicineID=100), findOne(patientID=002), \"08/28/2026\", \"555 Division Road, Soul Society, New York\", 100.9\n"+

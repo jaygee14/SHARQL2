@@ -45,6 +45,8 @@ public class TokenManager {
 
     private final Token.TokenTypes[] statementTokens = {Token.TokenTypes.CREATE, Token.TokenTypes.INSERT, Token.TokenTypes.DELETE, Token.TokenTypes.FROM};
 
+    private final Token.TokenTypes[] typeTokens = {Token.TokenTypes.STRING, Token.TokenTypes.WHOLENUMBER, Token.TokenTypes.DECIMALNUMBER};
+
     Optional<Token> matchAndRemove(Token.TokenTypes token) {
 
         if(tokenList.isEmpty()){
@@ -73,6 +75,17 @@ public class TokenManager {
         Optional<Token> token = Optional.empty();
         for (Token.TokenTypes passerToken : passerTokens) {
             token = matchAndRemove(passerToken);
+            if (token.isPresent()) {
+                break;
+            }
+        }
+        return token;
+    }
+
+    Optional<Token> checkType(){
+        Optional<Token> token = Optional.empty();
+        for (Token.TokenTypes type : typeTokens) {
+            token = matchAndRemove(type);
             if (token.isPresent()) {
                 break;
             }
