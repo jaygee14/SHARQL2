@@ -38,7 +38,7 @@ public class SharQLParser {
     }
 
     //findOne = "findOne" "(" compare ( "," compare) * ")"
-    Optional<findOne> findOne() throws SyntaxErrorException {
+    private Optional<findOne> findOne() throws SyntaxErrorException {
         if (manager.matchAndRemove(Token.TokenTypes.FINDONE).isEmpty()){
             return Optional.empty(); //is not a findOne call
         }
@@ -69,7 +69,7 @@ public class SharQLParser {
         return Optional.of(newFindOne);
     }
     // statement = create | insert | delete | from
-    Optional<statement> statement() throws SyntaxErrorException {
+    private Optional<statement> statement() throws SyntaxErrorException {
         Optional<Token> passedValue = manager.checkStatement();
 
         if (passedValue.isEmpty()){
@@ -91,7 +91,7 @@ public class SharQLParser {
         return Optional.of(statement);
     }
 
-    Optional<compare> compare() throws SyntaxErrorException {
+    private Optional<compare> compare() throws SyntaxErrorException {
 
         var leftToken = manager.matchAndRemove(Token.TokenTypes.IDENTIFIER);
 
@@ -138,7 +138,7 @@ public class SharQLParser {
         return Optional.of(newCompare);
     }
     // value = NUMBER | STRINGLITERAL | IDENTIFIER | findOne | valueList
-    Optional<value> value() throws SyntaxErrorException {
+    private Optional<value> value() throws SyntaxErrorException {
 
         Optional<Token> passedValue = manager.peek(0);
 
@@ -176,7 +176,7 @@ public class SharQLParser {
 
 
     // values = value ("," value)*
-    Optional<values> values() throws SyntaxErrorException {
+    private Optional<values> values() throws SyntaxErrorException {
 
         Optional<value> value = value();
         if (value.isEmpty()){
@@ -197,7 +197,7 @@ public class SharQLParser {
     }
 
     // valueList = "[" findOne? ("," findOne)* "]"
-    Optional<valueList> listOfValues() throws SyntaxErrorException {
+    private Optional<valueList> listOfValues() throws SyntaxErrorException {
 
         if (manager.matchAndRemove(Token.TokenTypes.LEFTBRACE).isEmpty()) {
             return Optional.empty();
@@ -228,7 +228,7 @@ public class SharQLParser {
     }
 
     // insert = "insert" IDENTIFIER NEWLINE INDENT (values NEWLINE)+ NEWLINE* DEDENT
-    Optional<insert> insert() throws SyntaxErrorException {
+    private Optional<insert> insert() throws SyntaxErrorException {
 
         if (manager.matchAndRemove(Token.TokenTypes.INSERT).isEmpty()){
             return Optional.empty();
@@ -268,7 +268,7 @@ public class SharQLParser {
         return Optional.of(newInsert);
     }
     // delete = "delete" IDENTIFIER NEWLINE INDENT ((values | findOne) NEWLINE)+ NEWLINE* DEDENT
-    Optional<delete> delete() throws SyntaxErrorException{
+    private Optional<delete> delete() throws SyntaxErrorException{
         if (manager.matchAndRemove(Token.TokenTypes.DELETE).isEmpty()){
             return Optional.empty();
         }
@@ -305,7 +305,7 @@ public class SharQLParser {
         return Optional.of(delete);
     }
     // return = "return" returnName ( "," returnName)*
-    Optional<return_> return_() throws SyntaxErrorException{
+    private Optional<return_> return_() throws SyntaxErrorException{
         if (manager.matchAndRemove(Token.TokenTypes.RETURN).isEmpty()){ // check for return declaration
             return Optional.empty();
         }
@@ -328,7 +328,7 @@ public class SharQLParser {
 
 
     // returnName = IDENTIFIER ( "." IDENTIFIER)*
-    Optional<returnName> returnName() throws SyntaxErrorException{
+    private Optional<returnName> returnName() throws SyntaxErrorException{
         var identifier = manager.matchAndRemove(Token.TokenTypes.IDENTIFIER);
         if (identifier.isEmpty()){
             return Optional.empty();
@@ -348,7 +348,7 @@ public class SharQLParser {
     }
 
     //where = "where" compare ("," returnName)*
-    Optional<where> where() throws SyntaxErrorException{
+    private Optional<where> where() throws SyntaxErrorException{
         if (manager.matchAndRemove(Token.TokenTypes.WHERE).isEmpty()){ // check for where token
             return Optional.empty();
         }
@@ -370,7 +370,7 @@ public class SharQLParser {
         return Optional.of(newWhere);
     }
      // from = "from" IDENTIFIER NEWLINE INDENT where? NEWLINE? return? NEWLINE* DEDENT
-    Optional<from> from() throws SyntaxErrorException {
+    private Optional<from> from() throws SyntaxErrorException {
         if (manager.matchAndRemove(Token.TokenTypes.FROM).isEmpty()) {
             return Optional.empty(); // check if from statement
         }
@@ -413,7 +413,7 @@ public class SharQLParser {
     }
 
     // type = "enum" "(" IDENTIFIER ("," IDENTIFIER)* ")" | "string" | "wholeNumber" | "decimalNumber" | "list" "<" IDENTIFIER ">" | IDENTIFIER
-    Optional<type> type() throws SyntaxErrorException {
+    private Optional<type> type() throws SyntaxErrorException {
 
         type newType = new type();
 
@@ -488,7 +488,7 @@ public class SharQLParser {
         return Optional.empty();
     }
     // field = type IDENTIFIER
-    Optional<field> field() throws SyntaxErrorException{
+    private Optional<field> field() throws SyntaxErrorException{
         var newType = type();
 
         if (newType.isEmpty()){
@@ -508,7 +508,7 @@ public class SharQLParser {
     }
 
     // create = "create" "table" IDENTIFIER NEWLINE INDENT (field NEWLINE)+ NEWLINE* DEDENT
-    Optional<create> create() throws SyntaxErrorException{
+    private Optional<create> create() throws SyntaxErrorException{
         if (manager.matchAndRemove(Token.TokenTypes.CREATE).isEmpty()){
             return Optional.empty();
         }

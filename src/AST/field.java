@@ -11,7 +11,6 @@ import AST.type;
 
 	public field () {
 }
-
 	public type type; 
-	public String name; 
+	public String name;
 }
