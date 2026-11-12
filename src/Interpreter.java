@@ -13,12 +13,16 @@ public class Interpreter {
     }
 
     public void printDatabase(){
-        database.forEach((key, value) -> System.out.println(key + " : " + value.fields));
+        database.forEach((key, value) -> {
+            System.out.println("Table: " + key);
+            value.printTable();
+            System.out.println();
+        });
     }
 
     private void processStatement(statement s) throws Exception {
-        if (s.create.isPresent()){
-            processCreate(s.create.get());
+        if (s.create.isPresent()){ // check for creat instruction
+            processCreate(s.create.get()); // get create ast
         }
     }
 
@@ -28,14 +32,14 @@ public class Interpreter {
             throw new Exception("Invalid create statement!");
         }
 
-        if (c.name == null || c.name.isEmpty() || c.field == null || c.field.isEmpty()){
+        if (c.name == null || c.name.isEmpty() || c.field == null || c.field.isEmpty()){ // check for incomplete create
             throw new Exception("Invalid create statement!");
         }
 
         if (database.containsKey(c.name)){
-            throw new Exception("Table already exists!");
+            throw new Exception("Table already exists!"); // handle table collisions
         }
 
-        database.put(c.name, new Table(c.field));
+        database.put(c.name, new Table(c.field)); // put create contents into database
     }
 }

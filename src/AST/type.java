@@ -16,5 +16,23 @@ import AST.string_ORwholeNumberORdecimalNumber;
 	public LinkedList<String> enumValue = new LinkedList<String>(); 
 	public boolean list; 
 	public LinkedList<String> tableName = new LinkedList<String>(); 
-	public Optional<string_ORwholeNumberORdecimalNumber> thestring_ORwholeNumberORdecimalNumber = Optional.empty(); 
+	public Optional<string_ORwholeNumberORdecimalNumber> thestring_ORwholeNumberORdecimalNumber = Optional.empty();
+
+	  @Override
+	  public String toString() {
+
+		  if (thestring_ORwholeNumberORdecimalNumber.isPresent()) {
+			  return thestring_ORwholeNumberORdecimalNumber.get().toString();
+		  }
+
+		  if (enum_) {
+			  return "ENUM " + enumValue;
+		  }
+
+		  if (list) {
+			  return "LIST " + tableName;
+		  }
+
+		  return "UNKNOWN";
+	  }
 }

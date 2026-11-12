@@ -1,3 +1,4 @@
+import AST.*;
 public static void main(String[] args) throws Exception {
 
     var code = "create table patient\n"+
@@ -70,11 +71,20 @@ public static void main(String[] args) throws Exception {
             "	string dischargeTime\n"+
             "\n";
 
+    //lex/parse
     Lexer lex = new Lexer(code);
     List<Token> tokenList = lex.Lex();
-
     SharQLParser parser = new SharQLParser(tokenList);
+    //run interpreter
     Interpreter interpreter = new Interpreter();
     interpreter.run(parser.sharQL());
     interpreter.printDatabase();
+    // search and print contents of database
+    Table search = interpreter.database.get("patient"); // lookup patient table
+    field f = search.getField("phoneNum"); // get schema from patient table
+    field s = search.getField(4); // get schema from index
+
+    System.out.println("First Search: " + f.name + "\n" + "Second Search: "+ s.name);
+
+
 }
