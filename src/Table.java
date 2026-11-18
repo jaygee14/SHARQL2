@@ -4,7 +4,7 @@ import java.util.*;
 public class Table {
     ArrayList<field> fields;
     HashMap<String, field> fieldMap;
-    LinkedList<LinkedList<Object>> records;
+    LinkedList<LinkedList<InterpreterDataType>> records;
 
 
 
@@ -39,11 +39,8 @@ public class Table {
 
         System.out.println("Records:");
 
-        for (LinkedList<Object> record : records) {
-            for (Object value : record) {
-                System.out.print(value.toString() + "\t");
-            }
-            System.out.println();
+        for (LinkedList<InterpreterDataType> record : records) {
+            System.out.println(record);
         }
     }
 }

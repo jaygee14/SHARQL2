@@ -33,6 +33,6 @@ import AST.string_ORwholeNumberORdecimalNumber;
 			  return "LIST " + tableName;
 		  }
 
-		  return "UNKNOWN";
+		  return "TABLE";
 	  }
 }

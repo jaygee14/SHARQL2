@@ -1,3 +1,3 @@
 public class WholeNumberInterpreterDataType extends InterpreterDataType {
-    public int Value;
+    public long Value;
 }
